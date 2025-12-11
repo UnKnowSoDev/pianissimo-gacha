@@ -15,10 +15,10 @@ let dbData = {
     config: {
         cost: 50,
         rewards: [
-            { name: 'เกลือ (อดน้าาา)', chance: 60 },
-            { name: 'น้ำดื่ม', chance: 25 },
-            { name: 'โปร 3 แถม 1', chance: 10 },
-            { name: 'รางวัลใหญ่ SSR', chance: 5 }
+            { name: 'เกลือ (อดน้าาา)', chance: 60, isRare: false },
+            { name: 'น้ำดื่ม', chance: 25, isRare: false },
+            { name: 'โปร 3 แถม 1', chance: 10, isRare: false },
+            { name: 'รางวัลใหญ่ SSR', chance: 5, isRare: true }
         ]
     },
     history: []
@@ -29,9 +29,8 @@ function loadDatabase() {
         try {
             const raw = fs.readFileSync(DB_FILE);
             dbData = JSON.parse(raw);
-            console.log('📂 Database loaded successfully.');
         } catch (e) {
-            console.error('Error loading database, using default.');
+            console.error(e);
         }
     } else {
         saveDatabase();
@@ -42,7 +41,7 @@ function saveDatabase() {
     try {
         fs.writeFileSync(DB_FILE, JSON.stringify(dbData, null, 4));
     } catch (e) {
-        console.error('Error saving database:', e);
+        console.error(e);
     }
 }
 
@@ -92,7 +91,8 @@ client.once('ready', async () => {
             description: 'Add or Update Reward (Admin Only)',
             options: [
                 { name: 'name', type: 3, description: 'Reward Name', required: true },
-                { name: 'chance', type: 4, description: 'Chance Weight', required: true }
+                { name: 'chance', type: 4, description: 'Chance Weight', required: true },
+                { name: 'is_rare', type: 5, description: 'Is Big Win?', required: false }
             ]
         },
         {
@@ -119,7 +119,6 @@ client.once('ready', async () => {
             Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
             { body: commands },
         );
-        console.log('Slash Commands Registered.');
     } catch (error) {
         console.error(error);
     }
@@ -129,20 +128,20 @@ client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
     if (interaction.commandName === 'listrewards') {
-        let msg = "**🎰 รายการของรางวัลในตู้:**\n";
+        let msg = "**🎰 Reward List:**\n";
         const totalWeight = dbData.config.rewards.reduce((sum, item) => sum + item.chance, 0);
         dbData.config.rewards.forEach((item, index) => {
             const percent = ((item.chance / totalWeight) * 100).toFixed(1);
-            msg += `> \`${index + 1}.\` **${item.name}** (${percent}%)\n`;
+            msg += `> \`${index + 1}.\` **${item.name}** ${item.isRare ? '🌟' : ''} (${percent}%)\n`;
         });
-        msg += `\n💎 **ค่ากด:** ${dbData.config.cost} P`;
+        msg += `\n💎 **Cost:** ${dbData.config.cost} P`;
         return interaction.reply(msg);
     }
 
     if (interaction.commandName === 'history') {
-        if (dbData.history.length === 0) return interaction.reply("ยังไม่มีประวัติการหมุนครับ");
+        if (dbData.history.length === 0) return interaction.reply("No history found.");
         const last10 = dbData.history.slice(-10).reverse();
-        let msg = "**📜 ประวัติการหมุนล่าสุด (Last 10):**\n";
+        let msg = "**📜 Recent Spins (Last 10):**\n";
         last10.forEach(log => {
             msg += `• <t:${Math.floor(new Date(log.date).getTime()/1000)}:R> | **${log.user}** ➔ **${log.item}**\n`;
         });
@@ -150,14 +149,14 @@ client.on('interactionCreate', async interaction => {
     }
 
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-        return interaction.reply({ content: '⛔ เฉพาะแอดมินเท่านั้นครับ', ephemeral: true });
+        return interaction.reply({ content: '⛔ Admin only', ephemeral: true });
     }
 
     if (interaction.commandName === 'random') {
         const cost = interaction.options.getInteger('cost');
         dbData.config.cost = cost; 
         saveDatabase();
-        await interaction.reply(`✅ ตั้งค่าราคาหมุนเป็น **${cost} Points** เรียบร้อย`);
+        await interaction.reply(`✅ Cost updated to **${cost} Points**`);
     }
 
     else if (interaction.commandName === 'addpoint') {
@@ -174,27 +173,28 @@ client.on('interactionCreate', async interaction => {
 
             try {
                 await member.setNickname(newNickname);
-                await interaction.editReply(`✅ เพิ่ม **${amount} P** ให้ ${targetUser}. (รวม: ${newPoints} P)`);
+                await interaction.editReply(`✅ Added **${amount} P** to ${targetUser}. (Total: ${newPoints} P)`);
             } catch (nickError) {
-                await interaction.editReply(`✅ เพิ่มแต้มในระบบแล้ว (${newPoints} P) แต่ **แก้ชื่อไม่ได้** (ติดยศ/เจ้าของ)`);
+                await interaction.editReply(`✅ Added points (${newPoints} P) but **failed to rename**.`);
             }
         } catch (error) {
             console.error(error);
-            await interaction.editReply('หา User ไม่เจอครับ');
+            await interaction.editReply('User not found.');
         }
     }
 
     else if (interaction.commandName === 'setreward') {
         const name = interaction.options.getString('name');
         const chance = interaction.options.getInteger('chance');
+        const isRare = interaction.options.getBoolean('is_rare') || false;
         const index = dbData.config.rewards.findIndex(r => r.name === name);
         
         if (index > -1) {
-            dbData.config.rewards[index].chance = chance;
-            await interaction.reply(`✅ อัปเดตโอกาสของ **${name}** เป็น ${chance}`);
+            dbData.config.rewards[index] = { name, chance, isRare };
+            await interaction.reply(`✅ Updated **${name}** (Chance: ${chance}, Rare: ${isRare})`);
         } else {
-            dbData.config.rewards.push({ name, chance });
-            await interaction.reply(`✅ เพิ่มของรางวัล **${name}** (โอกาส: ${chance})`);
+            dbData.config.rewards.push({ name, chance, isRare });
+            await interaction.reply(`✅ Added **${name}** (Chance: ${chance}, Rare: ${isRare})`);
         }
         saveDatabase(); 
     }
@@ -206,9 +206,9 @@ client.on('interactionCreate', async interaction => {
         
         if (dbData.config.rewards.length < initialLength) {
             saveDatabase();
-            await interaction.reply(`🗑️ ลบ **${name}** ออกแล้ว`);
+            await interaction.reply(`🗑️ Removed **${name}**`);
         } else {
-            await interaction.reply(`❌ หาของชื่อ **${name}** ไม่เจอ`);
+            await interaction.reply(`❌ Item **${name}** not found`);
         }
     }
 });
@@ -224,10 +224,16 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+app.set('trust proxy', 1);
+
 const sessionMiddleware = session({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || 'secret',
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 1000 * 60 * 60 * 24
+    }
 });
 
 app.use(sessionMiddleware);
@@ -286,7 +292,7 @@ app.post('/api/spin', async (req, res) => {
         const currentPoints = parsePointsFromNickname(currentName);
 
         if (currentPoints < COST) {
-            return res.json({ success: false, msg: `พอยต์ไม่พอ! (ต้องการ ${COST} P)` });
+            return res.json({ success: false, msg: `Not enough points! Need ${COST} P` });
         }
 
         const newPoints = currentPoints - COST;
@@ -296,30 +302,41 @@ app.post('/api/spin', async (req, res) => {
             await member.setNickname(newNickname);
         } catch (nickError) {
             console.error("Nickname failed:", nickError.message);
-            return res.json({ success: false, msg: "บอทแก้ชื่อไม่ได้ (ยศต่ำกว่า หรือเป็นเจ้าของห้อง)" });
+            return res.json({ success: false, msg: "Bot cannot change nickname (Permission/Owner)" });
         }
 
         const rewardPool = dbData.config.rewards;
         let totalWeight = rewardPool.reduce((sum, item) => sum + item.chance, 0);
         let randomNum = Math.random() * totalWeight;
-        let reward = "Error";
+        let rewardItem = null;
 
         for (const item of rewardPool) {
             if (randomNum < item.chance) {
-                reward = item.name;
+                rewardItem = item;
                 break;
             }
             randomNum -= item.chance;
         }
 
+        if (!rewardItem) rewardItem = rewardPool[0];
+
         dbData.history.push({
             user: req.user.username,
             userId: userId,
-            item: reward,
+            item: rewardItem.name,
             cost: COST,
             date: new Date().toISOString()
         });
         saveDatabase();
+
+        if (rewardItem.isRare) {
+            const avatarUrl = req.user.avatar ? `https://cdn.discordapp.com/avatars/${userId}/${req.user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
+            io.emit('jackpot', {
+                winner: req.user.username,
+                item: rewardItem.name,
+                avatar: avatarUrl
+            });
+        }
 
         if (process.env.LOG_CHANNEL_ID) {
             try {
@@ -330,14 +347,14 @@ app.post('/api/spin', async (req, res) => {
                         : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
                     const logEmbed = new EmbedBuilder()
-                        .setColor(0xFF9EB5)
-                        .setAuthor({ name: `${req.user.username} เสี่ยงดวง!`, iconURL: avatarUrl })
-                        .setTitle('🎉 ได้รับของรางวัล!')
-                        .setDescription(`> **${reward}**`) 
+                        .setColor(rewardItem.isRare ? 0xFFD700 : 0xFF9EB5)
+                        .setAuthor({ name: `${req.user.username} Spin!`, iconURL: avatarUrl })
+                        .setTitle(rewardItem.isRare ? '🏆 JACKPOT!' : '🎉 Reward Received!')
+                        .setDescription(`> **${rewardItem.name}**`) 
                         .addFields(
-                            { name: '💎 รางวัล (Reward)', value: `# 🎁 ${reward}`, inline: false },
-                            { name: '👤 ผู้เล่น', value: `<@${userId}>`, inline: true },
-                            { name: '💰 คงเหลือ', value: `\`${newPoints} P\``, inline: true }
+                            { name: '💎 Reward', value: `# 🎁 ${rewardItem.name}`, inline: false },
+                            { name: '👤 User', value: `<@${userId}>`, inline: true },
+                            { name: '💰 Balance', value: `\`${newPoints} P\``, inline: true }
                         )
                         .setThumbnail(avatarUrl)
                         .setFooter({ text: 'Pianissimo Gacha', iconURL: client.user.displayAvatarURL() })
@@ -350,8 +367,8 @@ app.post('/api/spin', async (req, res) => {
             }
         }
 
-        console.log(`[Spin] Result: ${reward}`);
-        res.json({ success: true, item: reward, points: newPoints });
+        console.log(`[Spin] Result: ${rewardItem.name}`);
+        res.json({ success: true, item: rewardItem.name, points: newPoints, isRare: rewardItem.isRare });
 
     } catch (error) {
         console.error(error);
