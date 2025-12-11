@@ -13,7 +13,7 @@ const DB_FILE = 'database.json';
 
 let dbData = {
     config: {
-        cost: 50,
+        cost: 1,
         rewards: [
             { name: 'เกลือ (อดน้าาา)', chance: 60 },
             { name: 'น้ำดื่ม', chance: 25 },
@@ -391,3 +391,4 @@ app.post('/api/spin', async (req, res) => {
 server.listen(3000, () => {
     console.log('Server running on http://localhost:3000');
 });
+
