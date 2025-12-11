@@ -7,12 +7,18 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Mitr:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         :root {
             --bg-start: #FFDEE9; --bg-end: #B5FFFC;
             --machine-body: #FFB7C5; --machine-dark: #FF8FA3;
             --text-color: #5D4E6D; --primary-btn: #FF847C;
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.8);
         }
+
+        * { box-sizing: border-box; }
 
         body {
             font-family: 'Mitr', 'Fredoka', sans-serif;
@@ -20,99 +26,152 @@
             background-attachment: fixed;
             color: var(--text-color);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: 100vh; margin: 0; 
+            min-height: 100vh; margin: 0; padding: 0;
             overflow: hidden; touch-action: manipulation;
         }
 
-        /* --- UI ELEMENTS --- */
-        .logo-img { position: absolute; top: 20px; left: 20px; width: 100px; z-index: 50; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.1)); transition: transform 0.3s; }
-        .logo-img:hover { transform: scale(1.05) rotate(-3deg); }
+        .top-nav {
+            position: fixed; top: 0; left: 0; width: 100%;
+            height: 70px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px;
+            z-index: 100;
+        }
 
-        .profile-bar {
-            position: absolute; top: 20px; right: 20px; display: flex; align-items: center; gap: 15px;
-            background: rgba(255, 255, 255, 0.6); padding: 8px 15px; border-radius: 50px;
-            border: 2px solid #fff; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1); backdrop-filter: blur(8px); z-index: 50;
+        .nav-left { display: flex; align-items: center; }
+        .logo-img-nav { 
+            height: 50px; width: auto; 
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+            transition: transform 0.2s;
         }
-        .profile-img { width: 45px; height: 45px; border-radius: 50%; border: 3px solid #fff; }
-        .profile-info { display: flex; flex-direction: column; line-height: 1.2; margin-right: 5px; }
-        .profile-name { font-weight: 600; color: #555; }
-        .profile-points { font-size: 0.9rem; color: #FF6B81; font-weight: bold; background: #FFF; padding: 2px 10px; border-radius: 10px; }
-        .logout-btn { background: var(--primary-btn); color: white; text-decoration: none; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; transition: 0.2s; }
-        
-        /* --- MACHINE --- */
-        .gacha-container { 
-            position: relative; width: 340px; height: 520px; margin-top: 20px; 
-            filter: drop-shadow(0 20px 30px rgba(0,0,0,0.15)); 
-            transform-origin: center center; transition: transform 0.3s ease;
+        .logo-img-nav:active { transform: scale(0.95); }
+
+        .nav-right {
+            display: flex; align-items: center; gap: 10px;
         }
+
+        .profile-pill {
+            display: flex; align-items: center; gap: 8px;
+            background: var(--glass-bg);
+            border: var(--glass-border);
+            padding: 5px 12px;
+            border-radius: 30px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .user-avatar { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; }
+        .user-points { font-weight: bold; color: #FF6B81; font-size: 0.95rem; }
+        .user-name-text { font-size: 0.9rem; color: #555; margin-right: 5px; }
+
+        .logout-icon-btn {
+            background: #fff; color: var(--primary-btn);
+            width: 38px; height: 38px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            text-decoration: none; border: 2px solid #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transition: 0.2s;
+        }
+        .logout-icon-btn:hover { background: var(--primary-btn); color: #fff; transform: translateY(-2px); }
+
+        .gacha-wrapper {
+            display: flex; justify-content: center; align-items: center;
+            width: 100%; height: 100vh;
+            padding-top: 60px;
+        }
+
+        .gacha-container {
+            position: relative;
+            width: 85vmin; 
+            height: 130vmin;
+            max-width: 340px; max-height: 520px;
+            filter: drop-shadow(0 20px 30px rgba(0,0,0,0.15));
+        }
+
         .machine-body {
-            width: 100%; height: 100%; background: linear-gradient(to bottom, var(--machine-body), var(--machine-dark));
-            border-radius: 120px 120px 40px 40px; position: relative; border: 4px solid #fff;
+            width: 100%; height: 100%;
+            background: linear-gradient(to bottom, var(--machine-body), var(--machine-dark));
+            border-radius: 12% 12% 8% 8%;
+            position: relative; border: 4px solid #fff;
             box-shadow: inset 10px 10px 20px rgba(255,255,255,0.4), inset -10px -10px 20px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; align-items: center;
         }
+
         .glass-dome {
-            width: 280px; height: 280px; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), rgba(200,240,255,0.2) 60%, rgba(150,220,255,0.4) 100%);
-            border-radius: 50%; position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
-            border: 6px solid rgba(255,255,255,0.8); box-shadow: inset 10px 10px 30px rgba(255,255,255,0.7), inset -10px -10px 30px rgba(0,0,0,0.1);
-            overflow: hidden; z-index: 2;
+            width: 85%; aspect-ratio: 1/1;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), rgba(200,240,255,0.2) 60%, rgba(150,220,255,0.4) 100%);
+            border-radius: 50%;
+            margin-top: 8%;
+            border: 4px solid rgba(255,255,255,0.8);
+            box-shadow: inset 5px 5px 20px rgba(255,255,255,0.7);
+            position: relative; overflow: hidden; z-index: 2;
         }
-        .reflection { position: absolute; top: 40px; left: 50px; width: 60px; height: 30px; background: white; border-radius: 50%; transform: rotate(-45deg); opacity: 0.6; filter: blur(2px); z-index: 10; }
-        
+        .reflection { position: absolute; top: 15%; left: 15%; width: 20%; height: 10%; background: white; border-radius: 50%; transform: rotate(-45deg); opacity: 0.6; filter: blur(2px); z-index: 10; }
+
         .capsule {
-            width: 40px; height: 40px; border-radius: 50%; position: absolute;
-            box-shadow: inset -2px -2px 5px rgba(0,0,0,0.2), 2px 2px 5px rgba(0,0,0,0.2);
-            border: 2px solid rgba(255,255,255,0.3); background: linear-gradient(135deg, var(--ball-color) 50%, #ffffff 50%);
-            transform-origin: center center; transition: all 0.5s ease-out;
+            width: 14%; aspect-ratio: 1/1;
+            border-radius: 50%; position: absolute;
+            box-shadow: inset -2px -2px 5px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.5); 
+            background: linear-gradient(135deg, var(--ball-color) 50%, #ffffff 50%);
+            transition: all 0.5s ease-out;
         }
 
         @keyframes floatAround {
             0% { transform: translate(0, 0) rotate(0deg); }
-            33% { transform: translate(20px, -30px) rotate(120deg); }
-            66% { transform: translate(-20px, 20px) rotate(240deg); }
+            33% { transform: translate(150%, -150%) rotate(120deg); }
+            66% { transform: translate(-100%, 100%) rotate(240deg); }
             100% { transform: translate(0, 0) rotate(360deg); }
         }
-
-        .glass-dome.is-mixing .capsule { animation: chaoticMix 0.8s infinite linear !important; }
+        .glass-dome.is-mixing .capsule { animation: chaoticMix 0.6s infinite linear !important; }
         @keyframes chaoticMix {
             0% { transform: translate(0,0) rotate(0deg) scale(1); }
-            25% { transform: translate(-30px, 20px) rotate(90deg) scale(1.1); }
-            50% { transform: translate(20px, -30px) rotate(180deg) scale(0.9); }
-            75% { transform: translate(-10px, -10px) rotate(270deg) scale(1.05); }
-            100% { transform: translate(0,0) rotate(360deg) scale(1); }
+            25% { transform: translate(-200%, 150%) rotate(90deg); }
+            50% { transform: translate(150%, -200%) rotate(180deg); }
+            75% { transform: translate(-100%, -100%) rotate(270deg); }
+            100% { transform: translate(0,0) rotate(360deg); }
         }
-
         .shaking { animation: smoothRumble 0.8s infinite ease-in-out; transform-origin: bottom center; }
         @keyframes smoothRumble {
-            0% { transform: rotate(0deg) translate(0, 0); }
-            25% { transform: rotate(1deg) translate(2px, 1px); }
-            50% { transform: rotate(0deg) translate(0, -2px); }
-            75% { transform: rotate(-1deg) translate(-2px, 1px); }
-            100% { transform: rotate(0deg) translate(0, 0); }
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(2deg); }
+            75% { transform: rotate(-2deg); }
         }
 
-        .controls { position: absolute; bottom: 40px; width: 100%; display: flex; flex-direction: column; align-items: center; }
-        .coin-slot { width: 60px; height: 12px; background: #444; border-radius: 10px; border: 2px solid #ccc; margin-bottom: 15px; }
-        .knob-base { width: 90px; height: 90px; background: #eee; border-radius: 50%; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; border: 4px solid #fff; }
-        .knob-handle {
-            width: 80px; height: 80px; background: radial-gradient(circle, #FFD700, #FFA500); border-radius: 50%; cursor: pointer; position: relative;
-            box-shadow: 0 4px 0 #cc8400, 0 8px 10px rgba(0,0,0,0.2); transition: transform 0.1s;
+        .controls {
+            flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;
+            gap: 10px; margin-top: -10px;
         }
-        .knob-handle::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 12px; background: #cc8400; border-radius: 5px; }
-        .knob-handle:active:not(:disabled) { transform: translateY(4px) rotate(45deg); box-shadow: 0 0 0 #cc8400; }
+        .coin-slot { width: 20%; height: 8px; background: #444; border-radius: 5px; border: 2px solid #ccc; }
+        
+        .knob-base {
+            width: 28%; aspect-ratio: 1/1;
+            background: #eee; border-radius: 50%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: flex; justify-content: center; align-items: center; border: 4px solid #fff;
+        }
+        .knob-handle {
+            width: 85%; height: 85%;
+            background: radial-gradient(circle, #FFD700, #FFA500); border-radius: 50%;
+            cursor: pointer; position: relative; border: none;
+            box-shadow: 0 4px 0 #cc8400; transition: transform 0.1s;
+        }
+        .knob-handle:active:not(:disabled) { transform: translateY(3px) rotate(45deg); box-shadow: none; }
         .knob-handle:disabled { filter: grayscale(100%); cursor: not-allowed; }
+        .knob-handle::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:60%; height:15%; background:#cc8400; border-radius:10px; }
+
         .dispenser {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            width: 100px; height: 50px; background: #333; border-radius: 10px 10px 25px 25px; border: 3px solid #fff;
-            overflow: hidden; box-shadow: inset 0 5px 10px rgba(0,0,0,0.5); z-index: 1;
+            width: 35%; height: 15%; background: #333;
+            border-radius: 10px 10px 20px 20px; border: 3px solid #fff;
+            overflow: hidden; margin-bottom: 20px; position: relative; z-index: 1;
+            box-shadow: inset 0 5px 10px rgba(0,0,0,0.5);
         }
         #rewardCapsule {
-            position: absolute; width: 50px; height: 50px; border-radius: 50%;
-            background: linear-gradient(135deg, #FFD700 50%, #fff 50%); top: -60px; left: 25px;
+            position: absolute; width: 50%; aspect-ratio: 1/1; border-radius: 50%;
+            background: #fff; top: -150%; left: 25%;
             border: 2px solid white; box-shadow: 0 5px 10px rgba(0,0,0,0.3);
             transition: top 0.6s cubic-bezier(1, -0.01, 0.58, 1.29); z-index: 5;
         }
 
-        /* --- OPENING ANIMATION OVERLAY --- */
         .opening-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
@@ -121,112 +180,116 @@
         }
         .opening-overlay.active { opacity: 1; visibility: visible; }
 
-        /* Container สำหรับส่วนที่จะแคปหน้าจอ */
         .capture-area {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            /* เพิ่มพื้นหลังใสๆ เวลาแคปจะได้สวย */
-            border-radius: 20px;
+            position: relative; display: flex; flex-direction: column; align-items: center;
+            padding: 20px; border-radius: 20px;
         }
 
         .big-capsule {
-            width: 240px; height: 240px; position: relative;
+            width: 260px; height: 260px; position: relative;
             animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+        .cap-top, .cap-bottom {
+            width: 100%; height: 50%; position: absolute; left: 0; border: 5px solid white; 
+            box-shadow: inset -5px 5px 15px rgba(0,0,0,0.1);
+        }
         .cap-top {
-            width: 100%; height: 50%; background: #FF6B81;
-            border-radius: 120px 120px 0 0; position: absolute; top: 0; left: 0; z-index: 3; 
+            background: #FF6B81; border-radius: 130px 130px 0 0; top: 0; border-bottom: none; z-index: 3;
             transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-            box-shadow: inset -5px 5px 15px rgba(255,255,255,0.4); border: 5px solid white; border-bottom: none;
         }
         .cap-bottom {
-            width: 100%; height: 50%; background: white;
-            border-radius: 0 0 120px 120px; position: absolute; bottom: 0; left: 0; z-index: 1; 
-            box-shadow: inset -5px -5px 15px rgba(0,0,0,0.1); border: 5px solid white; border-top: none;
+            background: white; border-radius: 0 0 130px 130px; bottom: 0; border-top: none; z-index: 1;
         }
+        
         .reward-paper {
-            position: absolute; width: 160px; height: 120px; background: #fff; top: 50%; left: 50%;
-            transform: translate(-50%, -50%) scale(0); z-index: 10; border-radius: 10px;
+            position: absolute; width: 180px; height: 140px; background: #fff; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0); z-index: 2; border-radius: 15px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; justify-content: center; align-items: center;
-            text-align: center; padding: 10px; border: 2px dashed #ddd;
+            text-align: center; padding: 15px; border: 2px dashed #ddd;
             transition: all 0.6s 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .reward-text-label { font-size: 0.9rem; color: #888; margin-bottom: 5px; }
-        .reward-text-value { font-size: 1.4rem; font-weight: bold; color: #FF6B81; }
-        
-        .big-capsule.open .cap-top { transform: translateY(-150px) rotate(-20deg); }
-        .big-capsule.open .reward-paper { transform: translate(-50%, -100%) scale(1.2) rotate(5deg); }
+        .reward-text-label { font-size: 0.9rem; color: #888; }
+        .reward-text-value { font-size: 1.6rem; font-weight: bold; color: #FF6B81; line-height: 1.2; margin-top: 5px; }
 
-        /* ปุ่มกดรับและปุ่มแคป */
+        .big-capsule.open .cap-top { transform: translateY(-160px) rotate(-20deg); }
+        .big-capsule.open .reward-paper { transform: translate(-50%, -100%) scale(1.1) rotate(3deg); z-index: 10; }
+
         .action-buttons {
-            position: absolute; bottom: -140px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 15px; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 20;
+            position: absolute; bottom: -120px; width: 100%; display: flex; justify-content: center; gap: 15px;
+            opacity: 0; transition: 0.3s; pointer-events: none;
         }
-        .big-capsule.open .action-buttons { bottom: -120px; opacity: 1; pointer-events: all; }
+        .big-capsule.open .action-buttons { opacity: 1; pointer-events: all; }
 
         .claim-btn {
             background: #5865F2; color: white; border: none; padding: 12px 30px;
             font-size: 1.1rem; border-radius: 50px; cursor: pointer;
-            box-shadow: 0 5px 0 #4752C4; transition: 0.2s; white-space: nowrap;
+            box-shadow: 0 5px 0 #4752C4;
         }
-        .claim-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 0 #4752C4; }
-
         .capture-btn {
-            background: #fff; color: #555; border: 2px solid #ddd; padding: 12px 15px;
-            font-size: 1.1rem; border-radius: 50%; cursor: pointer;
-            box-shadow: 0 5px 0 #ccc; transition: 0.2s; display: flex; align-items: center; justify-content: center;
+            background: #fff; color: #555; border: 2px solid #ddd; width: 45px; height: 45px;
+            font-size: 1.2rem; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 5px 0 #ccc;
         }
-        .capture-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 0 #ccc; background: #f9f9f9; }
+
+        .login-container {
+            text-align: center; background: rgba(255,255,255,0.85); padding: 40px;
+            border-radius: 30px; backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 90%;
+        }
+        .login-btn {
+            background: #5865F2; color: white; padding: 12px 30px; border-radius: 30px; 
+            text-decoration: none; font-size: 1.2rem; font-weight: bold; display: inline-block; margin-top: 20px;
+        }
 
         @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
-        
-        .login-box { background: rgba(255,255,255,0.8); padding: 40px; border-radius: 30px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1); backdrop-filter: blur(5px); }
-        .btn-login { background: #5865F2; color: white; padding: 12px 30px; border-radius: 30px; text-decoration: none; font-size: 1.2rem; font-weight: bold; }
 
         @media (max-width: 600px) {
-            .logo-img { left: 50%; transform: translateX(-50%); width: 90px; }
-            .logo-img:hover { transform: translateX(-50%) scale(1.05); }
-            .profile-bar { top: 70px; right: 50%; transform: translateX(50%); width: 90%; justify-content: space-between; padding: 5px 15px; }
-            .profile-info { flex-direction: row; align-items: center; gap: 10px; }
-            .profile-name { display: none; }
-            .gacha-container { margin-top: 100px; transform: scale(0.8); }
-            .login-box { width: 80%; margin-top: 50px; }
+            .user-name-text { display: none; }
+            .top-nav { padding: 0 15px; height: 60px; }
+            .logo-img-nav { height: 40px; }
+            .big-capsule { width: 220px; height: 220px; }
         }
     </style>
 </head>
 <body>
-    <img src="/image_0.png" alt="Logo" class="logo-img">
 
     <% if (!user) { %>
-        <div class="login-box">
-            <h2>Pianissimo Gacha</h2>
-            <p style="margin-bottom:20px; color:#777;">เข้าสู่ระบบเพื่อเสี่ยงดวง!</p>
-            <a href="/auth/discord" class="btn-login">Login with Discord</a>
+        <img src="/image_0.png" style="width: 150px; margin-bottom: 20px;" alt="Logo">
+        <div class="login-container">
+            <h2 style="margin:0; color:#555;">Pianissimo Gacha</h2>
+            <p style="color:#888;">เสี่ยงดวง ลุ้นรางวัลสุดน่ารัก!</p>
+            <a href="/auth/discord" class="login-btn"><i class="fab fa-discord"></i> Login</a>
         </div>
     <% } else { %>
-        <div class="profile-bar">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <img src="<%= user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png' %>" class="profile-img">
-                <div class="profile-info">
-                    <div class="profile-name"><%= user.username %></div>
-                    <div class="profile-points">💎 <span id="pointDisplay">...</span> P</div>
-                </div>
+        
+        <nav class="top-nav">
+            <div class="nav-left">
+                <img src="/image_0.png" alt="Logo" class="logo-img-nav">
             </div>
-            <a href="/logout" class="logout-btn">Log out</a>
-        </div>
-
-        <div class="gacha-container" id="machine">
-            <div class="machine-body">
-                <div class="glass-dome" id="dome"><div class="reflection"></div></div>
-                <div class="controls">
-                    <div class="coin-slot"></div>
-                    <div class="knob-base"><button id="spinBtn" class="knob-handle" onclick="spin()"></button></div>
+            <div class="nav-right">
+                <div class="profile-pill">
+                    <img src="<%= user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png' %>" class="user-avatar">
+                    <span class="user-name-text"><%= user.username %></span>
+                    <span class="user-points">💎 <span id="pointDisplay">...</span></span>
                 </div>
-                <div class="dispenser"><div id="rewardCapsule"></div></div>
+                <a href="/logout" class="logout-icon-btn" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+        </nav>
+
+        <div class="gacha-wrapper">
+            <div class="gacha-container" id="machine">
+                <div class="machine-body">
+                    <div class="glass-dome" id="dome"><div class="reflection"></div></div>
+                    <div class="controls">
+                        <div class="coin-slot"></div>
+                        <div class="knob-base">
+                            <button id="spinBtn" class="knob-handle" onclick="spin()"></button>
+                        </div>
+                    </div>
+                    <div class="dispenser"><div id="rewardCapsule"></div></div>
+                </div>
             </div>
         </div>
 
@@ -242,7 +305,7 @@
                     
                     <div class="action-buttons" id="actionButtons">
                         <button class="claim-btn" onclick="closeOverlay()">รับรางวัล</button>
-                        <button class="capture-btn" onclick="captureReward()" title="บันทึกรูปภาพ">📸</button>
+                        <button class="capture-btn" onclick="captureReward()"><i class="fas fa-camera"></i></button>
                     </div>
                 </div>
             </div>
@@ -273,8 +336,8 @@
                 let ball = document.createElement('div');
                 ball.className = 'capsule';
                 ball.style.setProperty('--ball-color', colors[Math.floor(Math.random()*colors.length)]);
-                ball.style.left = (Math.random() * 240) + 'px'; 
-                ball.style.top = (Math.random() * 240) + 'px';
+                ball.style.left = (Math.random() * 80 + 10) + '%'; 
+                ball.style.top = (Math.random() * 80 + 10) + '%';
                 ball.style.transform = `rotate(${Math.random()*360}deg)`;
                 ball.style.animation = `floatAround ${4+Math.random()*4}s infinite ease-in-out`;
                 ball.style.animationDelay = `-${Math.random()*5}s`;
@@ -288,8 +351,9 @@
                 isSpinning = true;
                 spinBtn.disabled = true;
 
-                rewardCapsule.style.top = "-60px";
+                rewardCapsule.style.top = "-150%";
                 bigCapsule.classList.remove('open');
+                
                 machine.classList.add('shaking');
                 dome.classList.add('is-mixing');
 
@@ -304,7 +368,7 @@
                         if(data.success) {
                             const randColor = colors[Math.floor(Math.random()*colors.length)];
                             rewardCapsule.style.background = `linear-gradient(135deg, ${randColor} 50%, #fff 50%)`;
-                            rewardCapsule.style.top = "5px";
+                            rewardCapsule.style.top = "15%";
 
                             setTimeout(() => {
                                 showOpeningScene(data.item, randColor);
@@ -314,7 +378,7 @@
                             isSpinning = false;
                             checkPoints();
                         }
-                    }, 1000);
+                    }, 1500);
 
                 } catch(e) {
                     machine.classList.remove('shaking');
@@ -340,26 +404,19 @@
                 checkPoints();
             }
 
-            // ฟังก์ชันแคปหน้าจอรางวัล
             function captureReward() {
                 const target = document.getElementById('captureTarget');
                 const btns = document.getElementById('actionButtons');
-                
-                // ซ่อนปุ่มก่อนแคป เพื่อความสวยงาม
                 btns.style.display = 'none';
-
-                html2canvas(target, { backgroundColor: null }).then(canvas => {
-                    // สร้างลิงก์ดาวน์โหลด
+                html2canvas(target, { backgroundColor: null, scale: 2 }).then(canvas => {
                     const link = document.createElement('a');
-                    link.download = 'my-gacha-reward.png';
+                    link.download = 'pianissimo-reward.png';
                     link.href = canvas.toDataURL();
                     link.click();
-
-                    // โชว์ปุ่มกลับมาเหมือนเดิม
                     btns.style.display = 'flex';
                 }).catch(err => {
                     console.error(err);
-                    alert("บันทึกภาพไม่สำเร็จ");
+                    alert("Failed to capture");
                     btns.style.display = 'flex';
                 });
             }
