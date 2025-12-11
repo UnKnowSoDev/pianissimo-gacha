@@ -29,10 +29,29 @@
             background: linear-gradient(135deg, var(--bg-start) 0%, #fff 60%, var(--bg-end) 100%);
             background-attachment: fixed; 
             color: var(--text-color);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: 100vh; margin: 0; padding: 0; 
-            overflow: hidden; touch-action: manipulation;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            touch-action: manipulation;
         }
+
+        .jackpot-banner {
+            position: absolute; top: -80px; left: 50%; transform: translateX(-50%) scale(0); width: 120%; height: 65px;
+            background: linear-gradient(90deg, #FFF, #FFEDCC, #FFF);
+            border-radius: 50px; display: flex; align-items: center; justify-content: center;
+            z-index: 200; box-shadow: 0 10px 30px rgba(255, 200, 50, 0.4), 0 0 20px rgba(255, 255, 255, 0.8);
+            border: 4px solid #fff; opacity: 0; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none;
+        }
+        .jackpot-banner.show { opacity: 1; transform: translateX(-50%) scale(1); top: -90px; }
+        .jackpot-content { display: flex; align-items: center; gap: 10px; font-size: 1rem; font-weight: bold; color: #E6A750; text-transform: uppercase; white-space: nowrap;}
+        .jackpot-avatar { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .jackpot-sparkle { position: absolute; font-size: 1.5rem; color: #FFD700; animation: sparkle 1s infinite alternate; }
+        @keyframes sparkle { from { opacity: 0.5; transform: scale(0.8); } to { opacity: 1; transform: scale(1.2); } }
 
         .top-nav { position: fixed; top: 0; left: 0; width: 100%; height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; z-index: 100; transition: top 0.3s; }
         .nav-left { display: flex; align-items: center; }
@@ -53,34 +72,12 @@
             width: 100%; height: 100%;
             background: linear-gradient(to bottom, var(--machine-body), var(--machine-dark));
             border-radius: 16% 16% 10% 10% / 12% 12% 8% 8%;
-            position: relative; border: 8px solid var(--machine-accent);
+            position: relative;
+            border: 8px solid var(--machine-accent);
             box-shadow: inset 10px 10px 30px rgba(255,255,255,0.7), inset -10px -10px 30px rgba(200, 150, 160, 0.2);
             display: flex; flex-direction: column; align-items: center;
             overflow: hidden;
         }
-
-        /* --- JACKPOT BANNER (ลอยเหนือตู้) --- */
-        .jackpot-banner {
-            position: absolute; 
-            top: -80px; /* ลอยอยู่เหนือตู้ */
-            left: 50%; transform: translateX(-50%) scale(0); /* เริ่มต้นซ่อนแบบย่อ */
-            width: 120%; /* กว้างกว่าตู้เล็กน้อย */
-            height: 65px;
-            background: linear-gradient(90deg, #FFF, #FFEDCC, #FFF);
-            border-radius: 50px;
-            display: flex; align-items: center; justify-content: center;
-            z-index: 200; 
-            box-shadow: 0 10px 30px rgba(255, 200, 50, 0.4), 0 0 20px rgba(255, 255, 255, 0.8);
-            border: 4px solid #fff;
-            opacity: 0;
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: none;
-        }
-        .jackpot-banner.show { opacity: 1; transform: translateX(-50%) scale(1); top: -90px; }
-        .jackpot-content { display: flex; align-items: center; gap: 10px; font-size: 1rem; font-weight: bold; color: #E6A750; text-transform: uppercase; white-space: nowrap;}
-        .jackpot-avatar { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .jackpot-sparkle { position: absolute; font-size: 1.5rem; color: #FFD700; animation: sparkle 1s infinite alternate; }
-        @keyframes sparkle { from { opacity: 0.5; transform: scale(0.8); } to { opacity: 1; transform: scale(1.2); } }
 
         .glass-dome {
             width: 90%; aspect-ratio: 1/1;
@@ -170,6 +167,15 @@
 </head>
 <body>
 
+    <div id="jackpotBanner" class="jackpot-banner">
+        <i class="fas fa-star" style="color:#E6A750; position:absolute; top:-10px; left:10px; font-size:1.5rem; animation:sparkle 1s infinite;"></i>
+        <div class="jackpot-content">
+            <img src="" id="jackpotAvatar" class="jackpot-avatar">
+            <span id="jackpotText"></span>
+        </div>
+        <i class="fas fa-star" style="color:#E6A750; position:absolute; bottom:-10px; right:10px; font-size:1.5rem; animation:sparkle 1s infinite 0.5s;"></i>
+    </div>
+
     <% if (!user) { %>
         <img src="/image_0.png" style="width: 160px; margin-bottom: 25px; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.1));" alt="Logo">
         <div class="login-container">
@@ -178,7 +184,6 @@
             <a href="/auth/discord" class="login-btn"><i class="fab fa-discord"></i> Login with Discord</a>
         </div>
     <% } else { %>
-        
         <nav class="top-nav" id="topNav">
             <div class="nav-left"><img src="/image_0.png" alt="Logo" class="logo-img-nav"></div>
             <div class="nav-right">
@@ -193,15 +198,6 @@
 
         <div class="gacha-wrapper">
             <div class="gacha-container" id="machine">
-                <div id="jackpotBanner" class="jackpot-banner">
-                    <i class="fas fa-star" style="color:#E6A750; position:absolute; top:-10px; left:10px; font-size:1.5rem; animation:sparkle 1s infinite;"></i>
-                    <div class="jackpot-content">
-                        <img src="" id="jackpotAvatar" class="jackpot-avatar">
-                        <span id="jackpotText"></span>
-                    </div>
-                    <i class="fas fa-star" style="color:#E6A750; position:absolute; bottom:-10px; right:10px; font-size:1.5rem; animation:sparkle 1s infinite 0.5s;"></i>
-                </div>
-
                 <div class="machine-body">
                     <div class="glass-dome" id="dome"><div class="reflection"></div></div>
                     <div class="controls">
@@ -247,20 +243,31 @@
             const jackpotBanner = document.getElementById('jackpotBanner');
             const jackpotText = document.getElementById('jackpotText');
             const jackpotAvatar = document.getElementById('jackpotAvatar');
-            
-            // ตั้งค่าพอยต์ขั้นต่ำที่กดได้ (แก้ได้)
-            const MIN_POINTS = 5;
+            const topNav = document.getElementById('topNav');
+
+            // ใช้ตัวแปร cost ที่ส่งมาจาก server เพื่อตั้งค่าปุ่ม
+            let currentCost = <%= typeof cost !== 'undefined' ? cost : 50 %>;
 
             socket.on('pointUpdate', (p) => {
                 pointDisplay.innerText = p;
-                if(!isSpinning) spinBtn.disabled = (p < MIN_POINTS);
+                checkPoints();
+            });
+
+            // อัปเดตราคาแบบ Real-time
+            socket.on('costUpdate', (newCost) => {
+                currentCost = newCost;
+                checkPoints();
             });
 
             socket.on('jackpot', (data) => {
                 jackpotText.innerText = `${data.winner} ได้รับ ${data.item} !!!`;
                 jackpotAvatar.src = data.avatar;
                 jackpotBanner.classList.add('show');
-                setTimeout(() => { jackpotBanner.classList.remove('show'); }, 6000);
+                topNav.classList.add('shifted');
+                setTimeout(() => {
+                    jackpotBanner.classList.remove('show');
+                    topNav.classList.remove('shifted');
+                }, 5000);
             });
 
             const colors = ['#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAE1FF', '#E6E6FA'];
@@ -344,7 +351,8 @@
 
             function checkPoints() {
                 const currentP = parseInt(pointDisplay.innerText);
-                if(currentP >= MIN_POINTS) spinBtn.disabled = false;
+                if(currentP >= currentCost) spinBtn.disabled = false;
+                else spinBtn.disabled = true;
             }
         <% } %>
     </script>
