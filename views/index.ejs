@@ -29,36 +29,12 @@
             background: linear-gradient(135deg, var(--bg-start) 0%, #fff 60%, var(--bg-end) 100%);
             background-attachment: fixed; 
             color: var(--text-color);
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center;
-            min-height: 100vh; 
-            margin: 0; 
-            padding: 0; 
-            overflow: hidden; 
-            touch-action: manipulation;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100vh; margin: 0; padding: 0; 
+            overflow: hidden; touch-action: manipulation;
         }
-
-        .jackpot-banner {
-            position: fixed; top: -100px; left: 0; width: 100%; height: 60px;
-            background: linear-gradient(90deg, #FFEDCC, #FFF, #FFEDCC);
-            background-size: 200% 100%; 
-            animation: shine 4s infinite linear;
-            display: flex; align-items: center; justify-content: center;
-            z-index: 9999; 
-            box-shadow: 0 4px 15px rgba(255, 200, 100, 0.3);
-            transition: top 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-            border-bottom: 3px solid #FFF;
-        }
-        .jackpot-banner.show { top: 0; }
-        .jackpot-content { display: flex; align-items: center; gap: 15px; font-size: 1.1rem; font-weight: bold; color: #E6A750; text-transform: uppercase; letter-spacing: 1px; }
-        .jackpot-avatar { width: 40px; height: 40px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        
-        @keyframes shine { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
 
         .top-nav { position: fixed; top: 0; left: 0; width: 100%; height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; z-index: 100; transition: top 0.3s; }
-        .top-nav.shifted { top: 60px; } 
         .nav-left { display: flex; align-items: center; }
         .logo-img-nav { height: 50px; width: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05)); transition: transform 0.2s; }
         .logo-img-nav:active { transform: scale(0.95); }
@@ -77,19 +53,39 @@
             width: 100%; height: 100%;
             background: linear-gradient(to bottom, var(--machine-body), var(--machine-dark));
             border-radius: 16% 16% 10% 10% / 12% 12% 8% 8%;
-            position: relative;
-            border: 8px solid var(--machine-accent);
+            position: relative; border: 8px solid var(--machine-accent);
             box-shadow: inset 10px 10px 30px rgba(255,255,255,0.7), inset -10px -10px 30px rgba(200, 150, 160, 0.2);
             display: flex; flex-direction: column; align-items: center;
             overflow: hidden;
         }
 
+        /* --- JACKPOT BANNER (ลอยเหนือตู้) --- */
+        .jackpot-banner {
+            position: absolute; 
+            top: -80px; /* ลอยอยู่เหนือตู้ */
+            left: 50%; transform: translateX(-50%) scale(0); /* เริ่มต้นซ่อนแบบย่อ */
+            width: 120%; /* กว้างกว่าตู้เล็กน้อย */
+            height: 65px;
+            background: linear-gradient(90deg, #FFF, #FFEDCC, #FFF);
+            border-radius: 50px;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 200; 
+            box-shadow: 0 10px 30px rgba(255, 200, 50, 0.4), 0 0 20px rgba(255, 255, 255, 0.8);
+            border: 4px solid #fff;
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+        }
+        .jackpot-banner.show { opacity: 1; transform: translateX(-50%) scale(1); top: -90px; }
+        .jackpot-content { display: flex; align-items: center; gap: 10px; font-size: 1rem; font-weight: bold; color: #E6A750; text-transform: uppercase; white-space: nowrap;}
+        .jackpot-avatar { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .jackpot-sparkle { position: absolute; font-size: 1.5rem; color: #FFD700; animation: sparkle 1s infinite alternate; }
+        @keyframes sparkle { from { opacity: 0.5; transform: scale(0.8); } to { opacity: 1; transform: scale(1.2); } }
+
         .glass-dome {
             width: 90%; aspect-ratio: 1/1;
             background: radial-gradient(circle at 40% 30%, rgba(255,255,255,0.8), rgba(230,245,255,0.4) 50%, rgba(200,230,255,0.1) 100%);
-            border-radius: 50%;
-            margin-top: 5%;
-            border: 6px solid rgba(255,255,255,0.9);
+            border-radius: 50%; margin-top: 5%; border: 6px solid rgba(255,255,255,0.9);
             box-shadow: inset 5px 5px 15px rgba(255,255,255,0.9), inset -5px -5px 15px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.05);
             position: relative; overflow: hidden; z-index: 2;
         }
@@ -98,12 +94,10 @@
         .glass-dome::after { content:''; position: absolute; bottom: 15%; right: 20%; width: 10%; height: 5%; background: rgba(255,255,255,0.5); border-radius: 50%; transform: rotate(-20deg); filter: blur(4px); pointer-events: none;}
 
         .capsule {
-            width: 15%; aspect-ratio: 1/1;
-            border-radius: 50%; position: absolute;
+            width: 15%; aspect-ratio: 1/1; border-radius: 50%; position: absolute;
             background: linear-gradient(to bottom, rgba(255,255,255,0.8) 45%, var(--ball-color) 55%);
             box-shadow: inset 0 -3px 5px rgba(0,0,0,0.1), inset 0 3px 5px rgba(255,255,255,0.6), 0 4px 6px rgba(0,0,0,0.1);
-            transition: all 0.5s ease-out;
-            overflow: hidden;
+            transition: all 0.5s ease-out; overflow: hidden;
         }
         .capsule::after { content: ''; position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: rgba(255,255,255,0.4); transform: translateY(-50%); }
         .capsule::before { content: ''; position: absolute; top: 10%; right: 15%; width: 25%; height: 25%; background: radial-gradient(circle, rgba(255,255,255,1) 20%, rgba(255,255,255,0) 70%); border-radius: 50%; filter: blur(1px); }
@@ -116,34 +110,22 @@
 
         .controls { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 12px; margin-top: 0px; position: relative; z-index: 3;}
         .coin-slot { width: 22%; height: 10px; background: #666; border-radius: 5px; border: 3px solid #ddd; box-shadow: inset 0 2px 4px rgba(0,0,0,0.4); }
-        
-        .knob-base { 
-            width: 30%; aspect-ratio: 1/1; background: #F0F0F0; border-radius: 50%; 
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1), inset 0 2px 5px rgba(255,255,255,0.8);
-            display: flex; justify-content: center; align-items: center; border: 5px solid #FFF;
-        }
-        .knob-handle { 
-            width: 82%; height: 82%; background: radial-gradient(circle at 30% 30%, #FFEB99, #FFC300); border-radius: 50%; 
-            cursor: pointer; position: relative; border: none; 
-            box-shadow: 0 6px 0 #CC9C00, 0 10px 15px rgba(0,0,0,0.15); transition: transform 0.1s; 
-        }
+        .knob-base { width: 30%; aspect-ratio: 1/1; background: #F0F0F0; border-radius: 50%; box-shadow: 0 8px 20px rgba(0,0,0,0.1), inset 0 2px 5px rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; border: 5px solid #FFF; }
+        .knob-handle { width: 82%; height: 82%; background: radial-gradient(circle at 30% 30%, #FFEB99, #FFC300); border-radius: 50%; cursor: pointer; position: relative; border: none; box-shadow: 0 6px 0 #CC9C00, 0 10px 15px rgba(0,0,0,0.15); transition: transform 0.1s; }
         .knob-handle:active:not(:disabled) { transform: translateY(4px) rotate(45deg); box-shadow: 0 2px 0 #CC9C00; }
         .knob-handle:disabled { filter: grayscale(100%); cursor: not-allowed; box-shadow: none; transform: translateY(4px);}
         .knob-handle::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:65%; height:18%; background:#CC9C00; border-radius:20px; box-shadow: inset 0 2px 3px rgba(0,0,0,0.2);}
 
         .dispenser {
-            width: 45%; height: 18%; 
-            background: #FFF5F7;
-            border-radius: 25px 25px 40px 40px;
-            border: 4px solid #FFF;
+            width: 45%; height: 18%; background: #FFF5F7;
+            border-radius: 25px 25px 40px 40px; border: 4px solid #FFF;
             overflow: hidden; margin-bottom: 25px; position: relative; z-index: 1;
             box-shadow: inset 0 15px 25px rgba(200, 150, 160, 0.3), inset 0 -5px 10px rgba(255,255,255,0.8);
         }
         #rewardCapsule { 
             position: absolute; width: 55%; aspect-ratio: 1/1; border-radius: 50%; 
             background: linear-gradient(to bottom, rgba(255,255,255,0.9) 40%, #FFD700 60%);
-            top: -160%; left: 22.5%; 
-            border: 2px solid white; 
+            top: -160%; left: 22.5%; border: 2px solid white; 
             box-shadow: inset 0 -5px 10px rgba(0,0,0,0.1), 0 8px 15px rgba(0,0,0,0.2);
             transition: top 0.7s cubic-bezier(1, -0.01, 0.58, 1.29); z-index: 5; 
         }
@@ -172,6 +154,7 @@
         .login-btn { background: #5865F2; color: white; padding: 14px 35px; border-radius: 50px; text-decoration: none; font-size: 1.2rem; font-weight: bold; display: inline-block; margin-top: 25px; box-shadow: 0 5px 15px rgba(88, 101, 242, 0.4); transition: 0.2s;}
         .login-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(88, 101, 242, 0.6); }
         @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
         @media (max-width: 600px) {
             .user-name-text { display: none; }
             .top-nav { padding: 0 15px; height: 60px; }
@@ -179,19 +162,13 @@
             .big-capsule { width: 230px; height: 230px; }
             .reward-paper { width: 170px; height: 130px; padding: 15px; }
             .reward-text-value { font-size: 1.5rem; }
+            /* ปรับป้ายในมือถือ */
+            .jackpot-banner { width: 90%; top: -80px; }
+            .jackpot-banner.show { top: -60px; }
         }
     </style>
 </head>
 <body>
-
-    <div id="jackpotBanner" class="jackpot-banner">
-        <div class="jackpot-content">
-            <i class="fas fa-trophy" style="color:#E6A750;"></i>
-            <img src="" id="jackpotAvatar" class="jackpot-avatar">
-            <span id="jackpotText"></span>
-            <i class="fas fa-star" style="color:#E6A750;"></i>
-        </div>
-    </div>
 
     <% if (!user) { %>
         <img src="/image_0.png" style="width: 160px; margin-bottom: 25px; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.1));" alt="Logo">
@@ -201,6 +178,7 @@
             <a href="/auth/discord" class="login-btn"><i class="fab fa-discord"></i> Login with Discord</a>
         </div>
     <% } else { %>
+        
         <nav class="top-nav" id="topNav">
             <div class="nav-left"><img src="/image_0.png" alt="Logo" class="logo-img-nav"></div>
             <div class="nav-right">
@@ -215,6 +193,15 @@
 
         <div class="gacha-wrapper">
             <div class="gacha-container" id="machine">
+                <div id="jackpotBanner" class="jackpot-banner">
+                    <i class="fas fa-star" style="color:#E6A750; position:absolute; top:-10px; left:10px; font-size:1.5rem; animation:sparkle 1s infinite;"></i>
+                    <div class="jackpot-content">
+                        <img src="" id="jackpotAvatar" class="jackpot-avatar">
+                        <span id="jackpotText"></span>
+                    </div>
+                    <i class="fas fa-star" style="color:#E6A750; position:absolute; bottom:-10px; right:10px; font-size:1.5rem; animation:sparkle 1s infinite 0.5s;"></i>
+                </div>
+
                 <div class="machine-body">
                     <div class="glass-dome" id="dome"><div class="reflection"></div></div>
                     <div class="controls">
@@ -260,22 +247,20 @@
             const jackpotBanner = document.getElementById('jackpotBanner');
             const jackpotText = document.getElementById('jackpotText');
             const jackpotAvatar = document.getElementById('jackpotAvatar');
-            const topNav = document.getElementById('topNav');
+            
+            // ตั้งค่าพอยต์ขั้นต่ำที่กดได้ (แก้ได้)
+            const MIN_POINTS = 5;
 
             socket.on('pointUpdate', (p) => {
                 pointDisplay.innerText = p;
-                if(!isSpinning) spinBtn.disabled = (p < 5);
+                if(!isSpinning) spinBtn.disabled = (p < MIN_POINTS);
             });
 
             socket.on('jackpot', (data) => {
                 jackpotText.innerText = `${data.winner} ได้รับ ${data.item} !!!`;
                 jackpotAvatar.src = data.avatar;
                 jackpotBanner.classList.add('show');
-                topNav.classList.add('shifted');
-                setTimeout(() => {
-                    jackpotBanner.classList.remove('show');
-                    topNav.classList.remove('shifted');
-                }, 5000);
+                setTimeout(() => { jackpotBanner.classList.remove('show'); }, 6000);
             });
 
             const colors = ['#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAE1FF', '#E6E6FA'];
@@ -359,7 +344,7 @@
 
             function checkPoints() {
                 const currentP = parseInt(pointDisplay.innerText);
-                if(currentP >= 1) spinBtn.disabled = false;
+                if(currentP >= MIN_POINTS) spinBtn.disabled = false;
             }
         <% } %>
     </script>
