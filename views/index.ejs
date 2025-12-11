@@ -264,7 +264,7 @@
 
             socket.on('pointUpdate', (p) => {
                 pointDisplay.innerText = p;
-                if(!isSpinning) spinBtn.disabled = (p < 50);
+                if(!isSpinning) spinBtn.disabled = (p < 5);
             });
 
             socket.on('jackpot', (data) => {
@@ -359,7 +359,7 @@
 
             function checkPoints() {
                 const currentP = parseInt(pointDisplay.innerText);
-                if(currentP >= 50) spinBtn.disabled = false;
+                if(currentP >= 1) spinBtn.disabled = false;
             }
         <% } %>
     </script>
