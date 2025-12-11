@@ -9,10 +9,8 @@ const { Client, GatewayIntentBits, REST, Routes, PermissionFlagsBits, EmbedBuild
 const fs = require('fs');
 const path = require('path');
 
-// --- DATABASE MANAGEMENT (JSON) ---
 const DB_FILE = 'database.json';
 
-// ข้อมูลเริ่มต้น
 let dbData = {
     config: {
         cost: 50,
@@ -26,7 +24,6 @@ let dbData = {
     history: []
 };
 
-// โหลดฐานข้อมูล
 function loadDatabase() {
     if (fs.existsSync(DB_FILE)) {
         try {
@@ -41,7 +38,6 @@ function loadDatabase() {
     }
 }
 
-// บันทึกฐานข้อมูล
 function saveDatabase() {
     try {
         fs.writeFileSync(DB_FILE, JSON.stringify(dbData, null, 4));
@@ -52,7 +48,6 @@ function saveDatabase() {
 
 loadDatabase();
 
-// --- DISCORD CLIENT ---
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -61,7 +56,6 @@ const client = new Client({
     ]
 });
 
-// Helper Functions
 function parsePointsFromNickname(nickname) {
     if (!nickname) return 0;
     const match = nickname.match(/[Pp]\s*[:：]\s*(\d+)/); 
@@ -76,7 +70,6 @@ function generateNewNickname(originalName, newPoints) {
     }
 }
 
-// --- BOT READY & SLASH COMMANDS ---
 client.once('ready', async () => {
     console.log(`Logged in as ${client.user.tag}`);
     
@@ -132,11 +125,9 @@ client.once('ready', async () => {
     }
 });
 
-// --- INTERACTION HANDLER ---
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
-    // Command: List Rewards
     if (interaction.commandName === 'listrewards') {
         let msg = "**🎰 รายการของรางวัลในตู้:**\n";
         const totalWeight = dbData.config.rewards.reduce((sum, item) => sum + item.chance, 0);
@@ -148,7 +139,6 @@ client.on('interactionCreate', async interaction => {
         return interaction.reply(msg);
     }
 
-    // Command: History
     if (interaction.commandName === 'history') {
         if (dbData.history.length === 0) return interaction.reply("ยังไม่มีประวัติการหมุนครับ");
         const last10 = dbData.history.slice(-10).reverse();
@@ -159,12 +149,10 @@ client.on('interactionCreate', async interaction => {
         return interaction.reply(msg);
     }
 
-    // --- ADMIN CHECK ---
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
         return interaction.reply({ content: '⛔ เฉพาะแอดมินเท่านั้นครับ', ephemeral: true });
     }
 
-    // Admin Commands
     if (interaction.commandName === 'random') {
         const cost = interaction.options.getInteger('cost');
         dbData.config.cost = cost; 
@@ -225,7 +213,6 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-// Update Realtime nickname change
 client.on('guildMemberUpdate', (oldMember, newMember) => {
     const newPoints = parsePointsFromNickname(newMember.nickname || newMember.user.username);
     io.to(newMember.id).emit('pointUpdate', newPoints);
@@ -233,7 +220,6 @@ client.on('guildMemberUpdate', (oldMember, newMember) => {
 
 client.login(process.env.BOT_TOKEN);
 
-// --- EXPRESS SERVER ---
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -313,7 +299,6 @@ app.post('/api/spin', async (req, res) => {
             return res.json({ success: false, msg: "บอทแก้ชื่อไม่ได้ (ยศต่ำกว่า หรือเป็นเจ้าของห้อง)" });
         }
 
-        // Logic Random
         const rewardPool = dbData.config.rewards;
         let totalWeight = rewardPool.reduce((sum, item) => sum + item.chance, 0);
         let randomNum = Math.random() * totalWeight;
@@ -327,7 +312,6 @@ app.post('/api/spin', async (req, res) => {
             randomNum -= item.chance;
         }
 
-        // Save History
         dbData.history.push({
             user: req.user.username,
             userId: userId,
@@ -337,7 +321,6 @@ app.post('/api/spin', async (req, res) => {
         });
         saveDatabase();
 
-        // --- BEAUTIFUL DISCORD EMBED LOG ---
         if (process.env.LOG_CHANNEL_ID) {
             try {
                 const logChannel = await client.channels.fetch(process.env.LOG_CHANNEL_ID);
@@ -347,18 +330,16 @@ app.post('/api/spin', async (req, res) => {
                         : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
                     const logEmbed = new EmbedBuilder()
-                        .setColor(0xFF9EB5) // สีชมพูพาสเทล
+                        .setColor(0xFF9EB5)
                         .setAuthor({ name: `${req.user.username} เสี่ยงดวง!`, iconURL: avatarUrl })
                         .setTitle('🎉 ได้รับของรางวัล!')
-                        // --- ไฮไลท์ของรางวัลตรงนี้ ---
                         .setDescription(`> **${reward}**`) 
-                        // ------------------------
                         .addFields(
-                            { name: '💎 รางวัล (Reward)', value: `# 🎁 ${reward}`, inline: false }, // Header ใหญ่ๆ
+                            { name: '💎 รางวัล (Reward)', value: `# 🎁 ${reward}`, inline: false },
                             { name: '👤 ผู้เล่น', value: `<@${userId}>`, inline: true },
                             { name: '💰 คงเหลือ', value: `\`${newPoints} P\``, inline: true }
                         )
-                        .setThumbnail(avatarUrl) // รูปคนเล่น
+                        .setThumbnail(avatarUrl)
                         .setFooter({ text: 'Pianissimo Gacha', iconURL: client.user.displayAvatarURL() })
                         .setTimestamp();
 
@@ -368,7 +349,6 @@ app.post('/api/spin', async (req, res) => {
                 console.error("Failed to send log:", err);
             }
         }
-        // ------------------------------------
 
         console.log(`[Spin] Result: ${reward}`);
         res.json({ success: true, item: reward, points: newPoints });
