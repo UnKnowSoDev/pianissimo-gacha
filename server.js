@@ -13,12 +13,12 @@ const DB_FILE = 'database.json';
 
 let dbData = {
     config: {
-        cost: 1,
+        cost: 50, // ค่าเริ่มต้นถ้าไม่มีไฟล์
         rewards: [
-            { name: 'เกลือ (อดน้าาา)', chance: 60 },
-            { name: 'น้ำดื่ม', chance: 25 },
-            { name: 'โปร 3 แถม 1', chance: 10 },
-            { name: 'รางวัลใหญ่ SSR', chance: 1 } 
+            { name: 'เกลือ (อดน้าาา)', chance: 60, isRare: false },
+            { name: 'น้ำดื่ม', chance: 25, isRare: false },
+            { name: 'โปร 3 แถม 1', chance: 10, isRare: false },
+            { name: 'รางวัลใหญ่ SSR', chance: 5, isRare: true }
         ]
     },
     history: []
@@ -91,7 +91,8 @@ client.once('ready', async () => {
             description: 'Add or Update Reward (Admin Only)',
             options: [
                 { name: 'name', type: 3, description: 'Reward Name', required: true },
-                { name: 'chance', type: 4, description: 'Chance Weight', required: true }
+                { name: 'chance', type: 4, description: 'Chance Weight', required: true },
+                { name: 'is_rare', type: 5, description: 'Is Big Win?', required: false }
             ]
         },
         {
@@ -129,14 +130,9 @@ client.on('interactionCreate', async interaction => {
     if (interaction.commandName === 'listrewards') {
         let msg = "**🎰 Reward List:**\n";
         const totalWeight = dbData.config.rewards.reduce((sum, item) => sum + item.chance, 0);
-        
-        // หาค่าน้อยที่สุดเพื่อแสดงดาว
-        const minChance = Math.min(...dbData.config.rewards.map(r => r.chance));
-
         dbData.config.rewards.forEach((item, index) => {
             const percent = ((item.chance / totalWeight) * 100).toFixed(1);
-            const isJackpot = item.chance === minChance;
-            msg += `> \`${index + 1}.\` **${item.name}** ${isJackpot ? '🏆' : ''} (${percent}%)\n`;
+            msg += `> \`${index + 1}.\` **${item.name}** ${item.isRare ? '🌟' : ''} (${percent}%)\n`;
         });
         msg += `\n💎 **Cost:** ${dbData.config.cost} P`;
         return interaction.reply(msg);
@@ -160,6 +156,9 @@ client.on('interactionCreate', async interaction => {
         const cost = interaction.options.getInteger('cost');
         dbData.config.cost = cost; 
         saveDatabase();
+        
+        io.emit('costUpdate', cost); // ส่งราคาใหม่ไปหาหน้าเว็บทันที
+
         await interaction.reply(`✅ Cost updated to **${cost} Points**`);
     }
 
@@ -190,14 +189,15 @@ client.on('interactionCreate', async interaction => {
     else if (interaction.commandName === 'setreward') {
         const name = interaction.options.getString('name');
         const chance = interaction.options.getInteger('chance');
+        const isRare = interaction.options.getBoolean('is_rare') || false;
         const index = dbData.config.rewards.findIndex(r => r.name === name);
         
         if (index > -1) {
-            dbData.config.rewards[index] = { name, chance };
-            await interaction.reply(`✅ Updated **${name}** (Chance: ${chance})`);
+            dbData.config.rewards[index] = { name, chance, isRare };
+            await interaction.reply(`✅ Updated **${name}** (Chance: ${chance}, Rare: ${isRare})`);
         } else {
-            dbData.config.rewards.push({ name, chance });
-            await interaction.reply(`✅ Added **${name}** (Chance: ${chance})`);
+            dbData.config.rewards.push({ name, chance, isRare });
+            await interaction.reply(`✅ Added **${name}** (Chance: ${chance}, Rare: ${isRare})`);
         }
         saveDatabase(); 
     }
@@ -264,6 +264,10 @@ passport.use(new DiscordStrategy({
 
 io.on('connection', async (socket) => {
     const user = socket.request.user;
+    
+    // ส่งราคาล่าสุดให้คนที่เพิ่งเข้ามา
+    socket.emit('costUpdate', dbData.config.cost);
+
     if (user) {
         socket.join(user.id);
         try {
@@ -277,7 +281,11 @@ io.on('connection', async (socket) => {
     }
 });
 
-app.get('/', (req, res) => res.render('index', { user: req.user }));
+app.get('/', (req, res) => {
+    // ส่งค่า cost เริ่มต้นไปให้หน้าเว็บทันที
+    res.render('index', { user: req.user, cost: dbData.config.cost });
+});
+
 app.get('/auth/discord', passport.authenticate('discord'));
 app.get('/auth/discord/callback', passport.authenticate('discord', { failureRedirect: '/' }), (req, res) => res.redirect('/'));
 app.get('/logout', (req, res, next) => req.logout(err => res.redirect('/')));
@@ -325,12 +333,8 @@ app.post('/api/spin', async (req, res) => {
 
         if (!rewardItem) rewardItem = rewardPool[0];
 
-        // --- Logic หา Jackpot อัตโนมัติ ---
-        // หาค่า chance ที่น้อยที่สุดในตู้
         const minChance = Math.min(...rewardPool.map(r => r.chance));
-        // ถ้ารางวัลที่ได้ มี chance เท่ากับค่าน้อยสุด -> คือ Jackpot
         const isJackpot = (rewardItem.chance === minChance);
-        // ---------------------------------
 
         dbData.history.push({
             user: req.user.username,
@@ -361,7 +365,7 @@ app.post('/api/spin', async (req, res) => {
                     const logEmbed = new EmbedBuilder()
                         .setColor(isJackpot ? 0xFFD700 : 0xFF9EB5)
                         .setAuthor({ name: `${req.user.username} Spin!`, iconURL: avatarUrl })
-                        .setTitle(isJackpot ? '🏆 JACKPOTแตก!!' : '🎉 Reward Received!')
+                        .setTitle(isJackpot ? '🏆 JACKPOT!' : '🎉 Reward Received!')
                         .setDescription(`> **${rewardItem.name}**`)
                         .addFields(
                             { name: '💎 Reward', value: `# 🎁 ${rewardItem.name}`, inline: false },
@@ -391,4 +395,3 @@ app.post('/api/spin', async (req, res) => {
 server.listen(3000, () => {
     console.log('Server running on http://localhost:3000');
 });
-
