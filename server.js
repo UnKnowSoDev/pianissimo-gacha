@@ -13,12 +13,12 @@ const DB_FILE = 'database.json';
 
 let dbData = {
     config: {
-        cost: 50, // ค่าเริ่มต้นถ้าไม่มีไฟล์
+        cost: 50,
         rewards: [
-            { name: 'เกลือ (อดน้าาา)', chance: 60, isRare: false },
-            { name: 'น้ำดื่ม', chance: 25, isRare: false },
-            { name: 'โปร 3 แถม 1', chance: 10, isRare: false },
-            { name: 'รางวัลใหญ่ SSR', chance: 5, isRare: true }
+            { name: 'เกลือ (อดน้าาา)', chance: 60 },
+            { name: 'น้ำดื่ม', chance: 25 },
+            { name: 'โปร 3 แถม 1', chance: 10 },
+            { name: 'รางวัลใหญ่ SSR', chance: 1 }
         ]
     },
     history: []
@@ -91,8 +91,7 @@ client.once('ready', async () => {
             description: 'Add or Update Reward (Admin Only)',
             options: [
                 { name: 'name', type: 3, description: 'Reward Name', required: true },
-                { name: 'chance', type: 4, description: 'Chance Weight', required: true },
-                { name: 'is_rare', type: 5, description: 'Is Big Win?', required: false }
+                { name: 'chance', type: 4, description: 'Chance Weight', required: true }
             ]
         },
         {
@@ -130,9 +129,12 @@ client.on('interactionCreate', async interaction => {
     if (interaction.commandName === 'listrewards') {
         let msg = "**🎰 Reward List:**\n";
         const totalWeight = dbData.config.rewards.reduce((sum, item) => sum + item.chance, 0);
+        const minChance = Math.min(...dbData.config.rewards.map(r => r.chance));
+
         dbData.config.rewards.forEach((item, index) => {
             const percent = ((item.chance / totalWeight) * 100).toFixed(1);
-            msg += `> \`${index + 1}.\` **${item.name}** ${item.isRare ? '🌟' : ''} (${percent}%)\n`;
+            const isJackpot = item.chance === minChance;
+            msg += `> \`${index + 1}.\` **${item.name}** ${isJackpot ? '🏆' : ''} (${percent}%)\n`;
         });
         msg += `\n💎 **Cost:** ${dbData.config.cost} P`;
         return interaction.reply(msg);
@@ -156,9 +158,7 @@ client.on('interactionCreate', async interaction => {
         const cost = interaction.options.getInteger('cost');
         dbData.config.cost = cost; 
         saveDatabase();
-        
-        io.emit('costUpdate', cost); // ส่งราคาใหม่ไปหาหน้าเว็บทันที
-
+        io.emit('costUpdate', cost);
         await interaction.reply(`✅ Cost updated to **${cost} Points**`);
     }
 
@@ -189,15 +189,14 @@ client.on('interactionCreate', async interaction => {
     else if (interaction.commandName === 'setreward') {
         const name = interaction.options.getString('name');
         const chance = interaction.options.getInteger('chance');
-        const isRare = interaction.options.getBoolean('is_rare') || false;
         const index = dbData.config.rewards.findIndex(r => r.name === name);
         
         if (index > -1) {
-            dbData.config.rewards[index] = { name, chance, isRare };
-            await interaction.reply(`✅ Updated **${name}** (Chance: ${chance}, Rare: ${isRare})`);
+            dbData.config.rewards[index] = { name, chance };
+            await interaction.reply(`✅ Updated **${name}** (Chance: ${chance})`);
         } else {
-            dbData.config.rewards.push({ name, chance, isRare });
-            await interaction.reply(`✅ Added **${name}** (Chance: ${chance}, Rare: ${isRare})`);
+            dbData.config.rewards.push({ name, chance });
+            await interaction.reply(`✅ Added **${name}** (Chance: ${chance})`);
         }
         saveDatabase(); 
     }
@@ -265,7 +264,6 @@ passport.use(new DiscordStrategy({
 io.on('connection', async (socket) => {
     const user = socket.request.user;
     
-    // ส่งราคาล่าสุดให้คนที่เพิ่งเข้ามา
     socket.emit('costUpdate', dbData.config.cost);
 
     if (user) {
@@ -282,7 +280,6 @@ io.on('connection', async (socket) => {
 });
 
 app.get('/', (req, res) => {
-    // ส่งค่า cost เริ่มต้นไปให้หน้าเว็บทันที
     res.render('index', { user: req.user, cost: dbData.config.cost });
 });
 
